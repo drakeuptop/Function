@@ -1,21 +1,18 @@
+// netlify/functions/send-email.js
 import { Resend } from "resend";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 export async function handler(event) {
   try {
-    const { email } = JSON.parse(event.body); // 👈 user input is the recipient
-    
+    const { email } = JSON.parse(event.body || "{}");   // recipient from form
     if (!email) {
-      return {
-        statusCode: 400,
-        body: JSON.stringify({ error: "Recipient email is required" })
-      };
+      return { statusCode: 400, body: JSON.stringify({ error: "Recipient email is required" }) };
     }
 
     const { data, error } = await resend.emails.send({
-      from: "LSU Tickets <onboarding@resend.dev>",  // fixed sender
-      to: email,                                     // 👈 recipient from form
+      from: "LSU Tickets <onboarding@resend.dev>",      // fixed sender
+      to: email,                                        // <-- send TO the entered email
       subject: "LSU Order – Football vs. Southern Louisiana",
       html: `
         <p>Your order is confirmed.</p>
@@ -27,21 +24,9 @@ export async function handler(event) {
       `
     });
 
-    if (error) {
-      return {
-        statusCode: 500,
-        body: JSON.stringify({ error })
-      };
-    }
-
-    return {
-      statusCode: 200,
-      body: JSON.stringify({ success: true, data })
-    };
-  } catch (err) {
-    return {
-      statusCode: 500,
-      body: JSON.stringify({ error: err.message })
-    };
+    if (error) return { statusCode: 500, body: JSON.stringify({ error }) };
+    return { statusCode: 200, body: JSON.stringify({ success: true, data }) };
+  } catch (e) {
+    return { statusCode: 500, body: JSON.stringify({ error: e.message }) };
   }
 }
